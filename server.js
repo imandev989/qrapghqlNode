@@ -8,7 +8,7 @@ const app = express();
 
 mongoose.connect("mongodb://127.0.0.1/graphql");
 mongoose.connection.once("open", () => {
-  console.log(`Connected to DB successfully`);
+  console.log(`Connect to DB successfully`);
 });
 
 app.use("/graphql", createHandler({ schema }));
