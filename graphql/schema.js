@@ -6,6 +6,7 @@ const {
   GraphQLSchema,
   GraphQLList,
   GraphQLInt,
+  GraphQLID,
 } = require("graphql");
 
 const CourseModel = require("./../models/Course");
@@ -19,10 +20,8 @@ const CourseType = new GraphQLObjectType({
     price: { type: GraphQLString },
     teacher: {
       type: TeacherType,
-      resolve: (source) => {
-        const teacher = teachers.find(
-          (teacher) => teacher.id === source.teacherID
-        );
+      resolve: async (source) => {
+        const teacher = await TeacherModel.findOne({ _id: source.teacher });
         return teacher;
       },
     },
@@ -37,10 +36,8 @@ const TeacherType = new GraphQLObjectType({
     age: { type: GraphQLInt },
     courses: {
       type: new GraphQLList(CourseType),
-      resolve: (source) => {
-        const teacherCourses = courses.filter(
-          (course) => course.teacherID === source.id
-        );
+      resolve: async (source) => {
+        const teacherCourses = await CourseModel.find({ teacher: source.id });
         return teacherCourses;
       },
     },
@@ -88,31 +85,42 @@ const RootQuery = new GraphQLObjectType({
   },
 });
 
-// const RootMutation = new GraphQLObjectType({
-//   name: "RootMutation",
-//   fields: {
-//     addTeacher: {
-//       type: TeacherType,
-//       args: {
-//         name: { type: GraphQLString },
-//         age: { type: GraphQLInt },
-//       },
-//       resolve: async (obj, args) => {
-//         const { name, age } = args;
-//         const teacher = { name, age };
-//         return await TeacherModel.create(teacher);
-//       },
-//     },
+const RootMutation = new GraphQLObjectType({
+  name: "RootMutation",
+  fields: {
+    addTeacher: {
+      type: TeacherType,
+      args: {
+        name: { type: GraphQLString },
+        age: { type: GraphQLInt },
+      },
+      resolve: async (obj, args) => {
+        const { name, age } = args;
+        const teacher = { name, age };
+        return await TeacherModel.create(teacher);
+      },
+    },
 
-//     addCourse: {
-//       // Data
-//     },
-//   },
-// });
+    addCourse: {
+      type: CourseType,
+      args: {
+        title: { type: GraphQLString },
+        price: { type: GraphQLInt },
+        teacher: { type: GraphQLID },
+      },
 
-// const schema = new GraphQLSchema({
-//   query: RootQuery,
-//   mutation: RootMutation,
-// });
+      resolve: async (obj, args) => {
+        const { title, price, teacher } = args;
+        const course = { title, price, teacher };
+        return await CourseModel.create(course);
+      },
+    },
+  },
+});
 
-// module.exports = schema;
+const schema = new GraphQLSchema({
+  query: RootQuery,
+  mutation: RootMutation,
+});
+
+module.exports = schema;
